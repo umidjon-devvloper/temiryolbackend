@@ -14,12 +14,6 @@ import { env } from '@/config/env';
 import { logger } from '@/common/utils/logger';
 import { writeFuelRecord, deleteFuelRecordBySubmission } from '@/modules/fuel-records/fuel-records.service';
 import { summariesService } from '@/modules/summaries/summaries.service';
-import {
-  getLimitsSettings,
-  checkKorxonaLimit,
-  checkQurulishLimit,
-  findActiveApproval,
-} from '@/modules/limits/limits.helper';
 import { broadcastSubmissionChange } from '@/config/socket';
 import type {
   LokomotivCreateInput,
@@ -244,30 +238,6 @@ class SubmissionsService {
     if (qancha <= 0) throw ApiError.badRequest('qancha 0 dan katta bo\'lishi kerak');
     if (!input.korxonaNomi) throw ApiError.badRequest('korxonaNomi majburiy');
 
-    // Limit + approval tekshirish
-    const settings = await getLimitsSettings();
-    const limitCheck = checkKorxonaLimit(input.korxonaNomi, qancha, nechaSutkalik, settings);
-
-    let isOverLimit = limitCheck.isOverLimit;
-    let approvalId: string | null = null;
-
-    if (isOverLimit) {
-      const approval = await findActiveApproval({
-        stationId: input.stationId,
-        requestType: 'korxona',
-        korxonaNomi: input.korxonaNomi,
-      });
-      if (approval) {
-        isOverLimit = false;
-        approvalId = approval.id;
-      } else if (!input.buyruqNumber || !input.kimTomonidan || !input.buyruqVaqti) {
-        throw ApiError.badRequest(
-          'Limit oshmoqda — buyruqNumber, kimTomonidan va buyruqVaqti majburiy yoki admin tomonidan ruxsatnoma berilishi kerak',
-          'OVER_LIMIT_NO_APPROVAL',
-        );
-      }
-    }
-
     if (input.mashinadaYetkazildi && !input.mashinaRaqami) {
       throw ApiError.badRequest('mashinadaYetkazildi=true bo\'lsa mashinaRaqami majburiy');
     }
@@ -293,12 +263,12 @@ class SubmissionsService {
             buyruqVaqti: input.buyruqVaqti ?? null,
             mashinadaYetkazildi: input.mashinadaYetkazildi ?? false,
             mashinaRaqami: input.mashinaRaqami ?? '',
-            limit: limitCheck.limitKg,
-            limitKg: limitCheck.limitKg,
-            excessKg: limitCheck.excessKg,
-            oshiqMiqdor: limitCheck.excessKg,
-            isOverLimit,
-            approvalId,
+            limit: 0,
+            limitKg: 0,
+            excessKg: 0,
+            oshiqMiqdor: 0,
+            isOverLimit: false,
+            approvalId: null,
           },
         ],
         { session },
@@ -348,7 +318,7 @@ class SubmissionsService {
       stationId: input.stationId,
       nodeId: input.nodeId,
       qancha,
-      isOverLimit,
+      isOverLimit: false,
       dateISO: meta.dateISO,
     });
 
@@ -359,10 +329,10 @@ class SubmissionsService {
       action: 'create',
       entityType: 'submission',
       entityId: id,
-      changes: { qancha: { old: null, new: qancha }, isOverLimit: { old: null, new: isOverLimit } },
+      changes: { qancha: { old: null, new: qancha } },
     });
 
-    return { id, isOverLimit, ...meta };
+    return { id, isOverLimit: false, ...meta };
   }
 
   // ─── Qurilish ──────────────────────────────────────────────────
@@ -373,30 +343,6 @@ class SubmissionsService {
     const qanchaOlindi = roundKg(toDecimal(input.qanchaOlindi));
     const qanchaBerildi = roundKg(toDecimal(input.qanchaBerildi));
     const fuelAmount = qanchaOlindi > 0 ? qanchaOlindi : qanchaBerildi;
-
-    // Limit (faqat korxonaNomi berilgan bo'lsa)
-    let isOverLimit = false;
-    let limitKg = 0;
-    let excessKg = 0;
-    let approvalId: string | null = null;
-
-    if (input.korxonaNomi && fuelAmount > 0) {
-      const settings = await getLimitsSettings();
-      const check = checkQurulishLimit(input.korxonaNomi, fuelAmount, settings);
-      limitKg = check.limitKg;
-      excessKg = check.excessKg;
-      isOverLimit = check.isOverLimit;
-
-      if (isOverLimit) {
-        // Qurulish uchun approval mexanizmi yo'q — buyruq talab qilinadi
-        if (!input.buyruqNumber || !input.kimTomonidan) {
-          throw ApiError.badRequest(
-            'Qurilish limiti oshmoqda — buyruqNumber va kimTomonidan majburiy',
-            'OVER_LIMIT_QURULISH',
-          );
-        }
-      }
-    }
 
     if (input.mashinadaYetkazildi && !input.mashinaRaqami) {
       throw ApiError.badRequest('mashinadaYetkazildi=true bo\'lsa mashinaRaqami majburiy');
@@ -432,12 +378,12 @@ class SubmissionsService {
             buyruqVaqti: input.buyruqVaqti ?? null,
             mashinadaYetkazildi: input.mashinadaYetkazildi ?? false,
             mashinaRaqami: input.mashinaRaqami ?? '',
-            limit: limitKg,
-            limitKg,
-            excessKg,
-            oshiqMiqdor: excessKg,
-            isOverLimit,
-            approvalId,
+            limit: 0,
+            limitKg: 0,
+            excessKg: 0,
+            oshiqMiqdor: 0,
+            isOverLimit: false,
+            approvalId: null,
           },
         ],
         { session },
@@ -504,7 +450,7 @@ class SubmissionsService {
       changes: { qancha: { old: null, new: fuelAmount } },
     });
 
-    return { id, isOverLimit, ...meta };
+    return { id, isOverLimit: false, ...meta };
   }
 
   // ─── Tamirlash ─────────────────────────────────────────────────

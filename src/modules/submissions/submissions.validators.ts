@@ -26,7 +26,8 @@ export const lokomotivCreateSchema = z.object({
   stansiya: z.string().optional().default(''),
   tashkilot: z.string().optional().default(''),
   ijarachi: z.string().optional().default(''),
-  zagranitsa: z.string().optional().default(''),
+  // Frontend zagranitsa'ni raqam yoki matn qilib yuborishi mumkin
+  zagranitsa: z.union([z.string(), z.number()]).optional(),
   jadval: z.string().optional().default(''),
 
   mashinadaYetkazildi: z.boolean().optional().default(false),
