@@ -12,7 +12,8 @@ const staffSchema = new Schema(
       required: true,
       unique: true,
       trim: true,
-      match: /^\d{4}$/,
+      uppercase: true,
+      match: /^[A-Z0-9]{4}$/,
     },
     fullName: { type: String, required: true, trim: true },
     erju: { type: String, required: true, trim: true },     // РЖУ nomi

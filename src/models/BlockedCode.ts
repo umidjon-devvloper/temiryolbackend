@@ -2,7 +2,7 @@ import { Schema, model, InferSchemaType, HydratedDocument } from 'mongoose';
 
 const blockedCodeSchema = new Schema(
   {
-    code: { type: String, required: true, unique: true, match: /^\d{4}$/ },
+    code: { type: String, required: true, unique: true, uppercase: true, match: /^[A-Z0-9]{4}$/ },
     note: { type: String, default: '' },
     blockedAt: { type: Number, default: () => Date.now() },
     blockedBy: { type: String, default: '' },           // admin code

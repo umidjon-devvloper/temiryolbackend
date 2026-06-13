@@ -79,7 +79,7 @@ function notifyStaffAndUsers(): void {
 
 // ─── Schemas ───
 const createSchema = z.object({
-  tabelNumber: z.string().regex(/^\d{4}$/, 'tabelNumber 4 raqamli bo\'lishi kerak'),
+  tabelNumber: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4}$/, 'tabelNumber 4 ta belgidan (harf yoki raqam) iborat bo\'lishi kerak'),
   fullName: z.string().min(2).max(120).trim(),
   erju: z.string().min(1),
   zapravka: z.string().min(1),

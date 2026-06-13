@@ -23,9 +23,9 @@ const envSchema = z.object({
     .default('true')
     .transform((v) => v === 'true'),
 
-  SEED_ADMIN_CODE: z.string().regex(/^\d{4}$/).default('9999'),
+  SEED_ADMIN_CODE: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4}$/).default('9999'),
   SEED_ADMIN_NAME: z.string().default('Bosh Admin'),
-  SEED_DEVELOPER_CODE: z.string().regex(/^\d{4}$/).default('9998'),
+  SEED_DEVELOPER_CODE: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4}$/).default('9998'),
   SEED_DEVELOPER_NAME: z.string().default('Tizim Boshqaruvchisi'),
 });
 

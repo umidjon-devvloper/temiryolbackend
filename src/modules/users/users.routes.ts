@@ -10,7 +10,7 @@ router.use(authMiddleware);
 router.use(requireRole('admin', 'developer'));
 
 const createSchema = z.object({
-  code: z.string().regex(/^\d{4}$/, 'Kod 4 raqamli bo\'lishi kerak'),
+  code: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4}$/, 'Kod 4 ta belgidan (harf yoki raqam) iborat bo\'lishi kerak'),
   role: z.enum(['worker', 'admin', 'developer']),
   displayName: z.string().min(1).max(120).trim(),
   nodeId: z.string().nullable().optional(),

@@ -12,7 +12,7 @@ router.use(authMiddleware);
 router.use(requireRole('admin', 'developer'));
 
 const blockSchema = z.object({
-  code: z.string().regex(/^\d{4}$/, 'Kod 4 raqamli'),
+  code: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{4}$/, 'Kod 4 ta belgidan (harf yoki raqam) iborat bo\'lishi kerak'),
   note: z.string().max(500).default(''),
 });
 
